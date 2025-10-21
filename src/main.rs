@@ -2,11 +2,17 @@ mod model;
 mod service;
 mod util;
 
-use crate::service::git_service::GitService;
+use service::git_service::GitService;
 
+// Test for git_service
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let result = GitService::test_call().await?;
-    println!("API Response: {}", result);
-    Ok(())
+async fn main() {
+    // Creates the GitService
+    let service = GitService::new();
+    println!("GitService created.");
+
+    let repos = service.fetch_top_repos("Rust").await;
+
+    // If successful, should print "Got 0 repos"
+    println!("Got {} repos.", repos.len());
 }
