@@ -6,25 +6,48 @@ pub struct JsonHandler;
 impl JsonHandler {
     pub fn parse_search_result(json_string: &str) -> Result<Vec<Repo>, String> {
         println!("JsonHandler Received:");
-        if json_string.len() > 500 {
-            println!("{}...", &json_string[..500]);
+        let mut repos = Vec::new();
+        
+        let start_items = json_string.find("\"items\":[");
+        if let Some(start_items) = start_items {
+            let mut bracket_index = 0;
+            let mut end = start_items + 9; // skip "items":[
+        
+            while end < json_string.len() {
+                if json_string.as_bytes()[end] == b'[' {
+                    bracket_index += 1;
+                } else if json_string.as_bytes()[end] == b']' {
+                    bracket_index -= 1;
+                    if bracket_index == 0 {
+                        break;
+                    }
+                }
+                end += 1;
+            }
+        
+            // Extract the items array
+            let items_json = &json_string[start_items + 9..end];
+                
+            // For now, just parse the first repo (simpler approach)
+            let name = Self::parse_data(items_json, "name").unwrap_or_default();
+            let owner_login = Self::parse_data(items_json, "owner.login").unwrap_or_default();
+            let html_url = Self::parse_data(items_json, "html_url").unwrap_or_default();
+            let forks_count = Self::parse_data(items_json, "forks_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
+            let language = Self::parse_data(items_json, "language").unwrap_or_default();
+            let open_issues_count = Self::parse_data(items_json, "open_issues_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
+        
+            let forks = Vec::new();
+            let recent_commits = Vec::new();
+            let issues = Vec::new();
+            let commit_count = 0;
+        
+            let repo = Repo::new(name, owner_login, html_url, forks_count, language, open_issues_count, forks, recent_commits, issues, commit_count);
+            repos.push(repo);
+        
+            Ok(repos)
         } else {
-            println!("{}", json_string);
+            Err("No items found".to_string())
         }
-        println!("End of JsonHandler");
-
-        // Testing parser function below
-        let name = Self::parse_data(json_string, "name");
-        match name {
-            Some(n) => println!("Extracted name: {}", n),
-            None => println!("Name not found"),
-        }
-        let id = Self::parse_data(json_string, "id");
-        match id {
-            Some(i) => println!("Extracted id: {}", i),
-            None => println!("ID not found"),
-        }
-        Ok(Vec::new())
     }
 
     pub fn parse_data(json: &str, key: &str) -> Option<String> {

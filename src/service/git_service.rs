@@ -25,7 +25,6 @@ impl GitService {
         
         GitService {client, token}
     }
-
     // Fetches the top 10 repos
     pub async fn fetch_top_repos(&self, language: &str) -> Vec<Repo> {
         let request_url = format!(
