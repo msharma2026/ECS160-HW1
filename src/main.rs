@@ -11,8 +11,11 @@ async fn main() {
     let service = GitService::new();
     println!("GitService created.");
 
-    let repos = service.fetch_top_repos("Rust").await;
+    let target_language = ["Rust", "Java", "C", "C++"];
+    for language in target_language {
+        let repos = service.fetch_top_repos(language).await;
+        println!("Language: {}, Got {} repos.", language, repos.len());
 
-    // If successful, should print "Got 0 repos"
-    println!("Got {} repos.", repos.len());
+    }
+
 }
