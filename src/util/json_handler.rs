@@ -12,38 +12,60 @@ impl JsonHandler {
         if let Some(start_items) = start_items {
             let mut bracket_index = 0;
             let mut end = start_items + 9; // skip "items":[
-        
+
             while end < json_string.len() {
                 if json_string.as_bytes()[end] == b'[' {
                     bracket_index += 1;
                 } else if json_string.as_bytes()[end] == b']' {
-                    bracket_index -= 1;
                     if bracket_index == 0 {
                         break;
                     }
+                    bracket_index -= 1;
                 }
                 end += 1;
             }
         
             // Extract the items array
             let items_json = &json_string[start_items + 9..end];
-                
+
+            end = 0;
+            let mut start = None;
+
+            while end < items_json.len() {
+                let byte = items_json.as_bytes()[end];
+                if byte == b'{' {
+                    if bracket_index == 0 {
+                        start = Some(end);
+                    }
+                    bracket_index += 1;
+                } else if byte == b'}' {
+                    bracket_index -= 1;
+                    if bracket_index == 0 {
+                        if let Some(start_index) = start {
+                            let repo_json = &items_json[start_index..=end];
+
+                            let name = Self::parse_data(items_json, "name").unwrap_or_default();
+                            let owner_login = Self::parse_data(items_json, "owner.login").unwrap_or_default();
+                            let html_url = Self::parse_data(items_json, "html_url").unwrap_or_default();
+                            let forks_count = Self::parse_data(items_json, "forks_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
+                            let language = Self::parse_data(items_json, "language").unwrap_or_default();
+                            let open_issues_count = Self::parse_data(items_json, "open_issues_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
+                        
+                            let forks = Vec::new();
+                            let recent_commits = Vec::new();
+                            let issues = Vec::new();
+                            let commit_count = 0;
+                        
+                            let repo = Repo::new(name, owner_login, html_url, forks_count, language, open_issues_count, forks, recent_commits, issues, commit_count);
+                            repos.push(repo);
+
+                            start = None;
+                        }
+                    }
+                }
+                end += 1;
             // For now, just parse the first repo (simpler approach)
-            let name = Self::parse_data(items_json, "name").unwrap_or_default();
-            let owner_login = Self::parse_data(items_json, "owner.login").unwrap_or_default();
-            let html_url = Self::parse_data(items_json, "html_url").unwrap_or_default();
-            let forks_count = Self::parse_data(items_json, "forks_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
-            let language = Self::parse_data(items_json, "language").unwrap_or_default();
-            let open_issues_count = Self::parse_data(items_json, "open_issues_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
-        
-            let forks = Vec::new();
-            let recent_commits = Vec::new();
-            let issues = Vec::new();
-            let commit_count = 0;
-        
-            let repo = Repo::new(name, owner_login, html_url, forks_count, language, open_issues_count, forks, recent_commits, issues, commit_count);
-            repos.push(repo);
-        
+            }
             Ok(repos)
         } else {
             Err("No items found".to_string())
