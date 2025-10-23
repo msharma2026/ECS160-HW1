@@ -16,15 +16,32 @@ async fn main() {
         let repos = service.fetch_top_repos(language).await;
         println!("Language: {}, Got {} repos.", language, repos.len());
 
-        let forks = service.fetch_forks(&repos[0].ownerLogin, &repos[0].name).await;
-        println!("Forks: {}", forks.len());
+        let mut total_forks = 0;
+        let mut total_commits = 0;
+        let mut total_issues = 0;
 
-        let commits = service.fetch_commits(&repos[0].ownerLogin, &repos[0].name).await;
-        println!("Commits: {}", commits.len());
+        // Loop through all 10 repos
+        for repo in &repos {
+            println!("\nChecking repo: {}/{}", repo.ownerLogin, repo.name);
+            
+            let forks = service.fetch_forks(&repo.ownerLogin, &repo.name).await;
+            println!("  Forks: {}", forks.len());
+            total_forks += forks.len();
 
-        let issues = service.fetch_issues(&repos[0].ownerLogin, &repos[0].name).await;
-        println!("Issues: {}", issues.len());
+            let commits = service.fetch_commits(&repo.ownerLogin, &repo.name).await;
+            println!("  Commits: {}", commits.len());
+            total_commits += commits.len();
 
+            let issues = service.fetch_issues(&repo.ownerLogin, &repo.name).await;
+            println!("  Issues: {}", issues.len());
+            total_issues += issues.len();
+        }
+
+        // Print totals for this language
+        println!("\n--- Totals for {} ---", language);
+        println!("Total Forks: {}", total_forks);
+        println!("Total Commits: {}", total_commits);
+        println!("Total Issues: {}", total_issues);
     }
 
 }
