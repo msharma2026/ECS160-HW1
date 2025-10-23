@@ -1,4 +1,6 @@
 use crate::model::repo::Repo;
+use crate::model::commit::Commit;
+use crate::model::issue::Issue;
 
 pub struct JsonHandler;
 
@@ -28,48 +30,72 @@ impl JsonHandler {
             // Extract the items array
             let items_json = &json_string[start_items + 9..end];
 
-            end = 0;
-            let mut start = None;
+        // Use the helper to get individual objects
+        let objects = Self::json_extract(items_json);
 
-            while end < items_json.len() {
-                let byte = items_json.as_bytes()[end];
-                if byte == b'{' {
-                    if bracket_index == 0 {
-                        start = Some(end);
-                    }
-                    bracket_index += 1;
-                } else if byte == b'}' {
-                    bracket_index -= 1;
-                    if bracket_index == 0 {
-                        if let Some(start_index) = start {
-                            let repo_json = &items_json[start_index..=end];
+        // Parse each object
+        for repo_json in objects {
+            let name = Self::parse_data(&repo_json, "name").unwrap_or_default();
+            let owner_login = Self::parse_data(&repo_json, "owner.login").unwrap_or_default();
+            let html_url = Self::parse_data(&repo_json, "html_url").unwrap_or_default();
+            let forks_count = Self::parse_data(&repo_json, "forks_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            let language = Self::parse_data(&repo_json, "language").unwrap_or_default();
+            let open_issues_count = Self::parse_data(&repo_json, "open_issues_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+    
+            let repo = Repo::new(
+                name, 
+                owner_login, 
+                html_url, 
+                forks_count, 
+                language, 
+                open_issues_count, 
+                Vec::new(), 
+                Vec::new(), 
+                Vec::new(), 
+                0
+            );
+            repos.push(repo);
+        } 
 
-                            let name = Self::parse_data(items_json, "name").unwrap_or_default();
-                            let owner_login = Self::parse_data(items_json, "owner.login").unwrap_or_default();
-                            let html_url = Self::parse_data(items_json, "html_url").unwrap_or_default();
-                            let forks_count = Self::parse_data(items_json, "forks_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
-                            let language = Self::parse_data(items_json, "language").unwrap_or_default();
-                            let open_issues_count = Self::parse_data(items_json, "open_issues_count").unwrap_or_default().parse::<u64>().unwrap_or(0);
-                        
-                            let forks = Vec::new();
-                            let recent_commits = Vec::new();
-                            let issues = Vec::new();
-                            let commit_count = 0;
-                        
-                            let repo = Repo::new(name, owner_login, html_url, forks_count, language, open_issues_count, forks, recent_commits, issues, commit_count);
-                            repos.push(repo);
-
-                            start = None;
-                        }
+        Ok(repos)
+    } else {
+        Err("No items found".to_string())
+    }
+    }
+    
+    pub fn json_extract(array_json: &str) -> Vec<String> {
+        let mut items = Vec::new();
+        let mut bracket_index = 0;
+        let mut end = 0;
+        let mut start = None;
+        
+        while end < array_json.len() {
+            let byte = array_json.as_bytes()[end];
+            if byte == b'{' {
+                if bracket_index == 0 {
+                    start = Some(end);
+                }
+                bracket_index += 1;
+            } else if byte == b'}' {
+                bracket_index -= 1;
+                if bracket_index == 0 {
+                    if let Some(start_index) = start {
+                        let obj = &array_json[start_index..=end];
+                        items.push(obj.to_string());
+                        start = None;
                     }
                 }
-                end += 1;
-            // For now, just parse the first repo (simpler approach)
             }
-            Ok(repos)
-        } else {
-            Err("No items found".to_string())
+            end += 1;
         }
+
+        items
     }
 
     pub fn parse_data(json: &str, key: &str) -> Option<String> {
@@ -91,5 +117,75 @@ impl JsonHandler {
         }
         None
     
+    }
+
+    pub fn parse_forks_result(json_string: &str) -> Result<Vec<Repo>, String> {
+        let objects = Self::json_extract(json_string);
+        let mut repos = Vec::new();
+        
+        for repo_json in objects {
+            let name = Self::parse_data(&repo_json, "name").unwrap_or_default();
+            let owner_login = Self::parse_data(&repo_json, "login").unwrap_or_default(); // owner is at root level for forks
+            let html_url = Self::parse_data(&repo_json, "html_url").unwrap_or_default();
+            let forks_count = Self::parse_data(&repo_json, "forks_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            let language = Self::parse_data(&repo_json, "language").unwrap_or_default();
+            let open_issues_count = Self::parse_data(&repo_json, "open_issues_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            
+            let repo = Repo::new(
+                name,
+                owner_login,
+                html_url,
+                forks_count,
+                language,
+                open_issues_count,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                0
+            );
+            repos.push(repo);
+        }
+        
+        Ok(repos)
+    }
+
+    pub fn parse_commits_result(json_string: &str) -> Result<Vec<Commit>, String> {
+        let objects = Self::json_extract(json_string);
+        let mut commits = Vec::new();
+
+        for commit_json in objects {
+            let sha = Self::parse_data(&commit_json, "sha").unwrap_or_default();
+            let message = Self::parse_data(&commit_json, "message").unwrap_or_default();
+            
+            let commit = Commit::new(sha, message);
+            commits.push(commit);
+        }
+
+        Ok(commits)
+    }
+
+    pub fn parse_issues_result(json_string: &str) -> Result<Vec<Issue>, String> {
+        let objects = Self::json_extract(json_string);
+        let mut issues = Vec::new();
+
+        for issue_json in objects {
+            let title = Self::parse_data(&issue_json, "title").unwrap_or_default();
+            let body = Self::parse_data(&issue_json, "body").unwrap_or_default();
+            let state = Self::parse_data(&issue_json, "state").unwrap_or_default();
+            let created_at = Self::parse_data(&issue_json, "created_at").unwrap_or_default();
+            let updated_at = Self::parse_data(&issue_json, "updated_at").unwrap_or_default();
+
+            let issue = Issue::new(title, body, state, created_at, updated_at);
+
+            issues.push(issue);
+        }
+
+        Ok(issues)
     }
 }
