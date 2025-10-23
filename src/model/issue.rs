@@ -1,9 +1,9 @@
 pub struct Issue {
-    title: String,
-    body: String,
-    state: String,
-    createdAt: String,
-    updatedAt: String,
+    pub title: String,
+    pub body: String,
+    pub state: String,
+    pub createdAt: String,
+    pub updatedAt: String,
 }
 impl Issue {
     pub fn new(title: String, body: String, state: String, createdAt: String, updatedAt: String) -> Self {

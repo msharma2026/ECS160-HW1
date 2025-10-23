@@ -1,6 +1,7 @@
 use crate::model::repo::Repo;
 use crate::model::commit::Commit;
 use crate::model::issue::Issue;
+use crate::model::owner::Owner;
 
 pub struct JsonHandler;
 
@@ -98,6 +99,42 @@ impl JsonHandler {
         items
     }
 
+    pub fn parse_owners_object(json_string: &str) -> Result<Vec<Owner>, String> {
+        let objects = Self::json_extract(json_string);
+        let mut owners = Vec::new();
+
+        for owner_json in objects {
+            let login = Self::parse_data(&owner_json, "login").unwrap_or_default();
+            let id = Self::parse_data(&owner_json, "id").unwrap_or_default();
+            let htmlUrl = Self::parse_data(&owner_json, "htmlUrl").unwrap_or_default();
+            let site_admin = Self::parse_data(&owner_json, "site_admin").unwrap_or_default();
+
+            let owner = Owner::new(login, id, htmlUrl, site_admin);
+
+            owners.push(owner)
+        }
+        Ok(owners)
+    }
+
+    pub fn parse_issues_object(json_string: &str) -> Result<Vec<Issue>, String> {
+        let objects = Self::json_extract(json_string);
+        let mut issues = Vec::new();
+
+        for issue_json in objects {
+            let title = Self::parse_data(&issue_json, "title").unwrap_or_default();
+            let body = Self::parse_data(&issue_json, "body").unwrap_or_default();
+            let state = Self::parse_data(&issue_json, "state").unwrap_or_default();
+            let created_at = Self::parse_data(&issue_json, "created_at").unwrap_or_default();
+            let updated_at = Self::parse_data(&issue_json, "updated_at").unwrap_or_default();
+
+            let issue = Issue::new(title, body, state, created_at, updated_at);
+
+            issues.push(issue);
+        }
+
+        Ok(issues)
+    }
+
     pub fn parse_data(json: &str, key: &str) -> Option<String> {
         // Formats key to search for data field in the JSON
         let pattern = format!("\"{}\":", key);
@@ -168,24 +205,5 @@ impl JsonHandler {
         }
 
         Ok(commits)
-    }
-
-    pub fn parse_issues_result(json_string: &str) -> Result<Vec<Issue>, String> {
-        let objects = Self::json_extract(json_string);
-        let mut issues = Vec::new();
-
-        for issue_json in objects {
-            let title = Self::parse_data(&issue_json, "title").unwrap_or_default();
-            let body = Self::parse_data(&issue_json, "body").unwrap_or_default();
-            let state = Self::parse_data(&issue_json, "state").unwrap_or_default();
-            let created_at = Self::parse_data(&issue_json, "created_at").unwrap_or_default();
-            let updated_at = Self::parse_data(&issue_json, "updated_at").unwrap_or_default();
-
-            let issue = Issue::new(title, body, state, created_at, updated_at);
-
-            issues.push(issue);
-        }
-
-        Ok(issues)
     }
 }
