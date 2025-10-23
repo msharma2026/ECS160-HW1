@@ -7,9 +7,8 @@ pub struct JsonHandler;
 
 // Test for git_service
 impl JsonHandler {
-    pub fn parse_search_result(json_string: &str) -> Result<Vec<Repo>, String> {
+    pub fn extract_items_array(json_string: &str) -> Result<String, String> {
         println!("JsonHandler Received:");
-        let mut repos = Vec::new();
         
         let start_items = json_string.find("\"items\":[");
         if let Some(start_items) = start_items {
@@ -28,46 +27,13 @@ impl JsonHandler {
                 end += 1;
             }
         
-            // Extract the items array
-            let items_json = &json_string[start_items + 9..end];
+        // Extract the items array
+        let items_json = &json_string[start_items + 9..end];
 
-        // Use the helper to get individual objects
-        let objects = Self::json_extract(items_json);
-
-        // Parse each object
-        for repo_json in objects {
-            let name = Self::parse_data(&repo_json, "name").unwrap_or_default();
-            let owner_login = Self::parse_data(&repo_json, "owner.login").unwrap_or_default();
-            let html_url = Self::parse_data(&repo_json, "html_url").unwrap_or_default();
-            let forks_count = Self::parse_data(&repo_json, "forks_count")
-                .unwrap_or_default()
-                .parse::<u64>()
-                .unwrap_or(0);
-            let language = Self::parse_data(&repo_json, "language").unwrap_or_default();
-            let open_issues_count = Self::parse_data(&repo_json, "open_issues_count")
-                .unwrap_or_default()
-                .parse::<u64>()
-                .unwrap_or(0);
-    
-            let repo = Repo::new(
-                name, 
-                owner_login, 
-                html_url, 
-                forks_count, 
-                language, 
-                open_issues_count, 
-                Vec::new(), 
-                Vec::new(), 
-                Vec::new(), 
-                0
-            );
-            repos.push(repo);
-        } 
-
-        Ok(repos)
-    } else {
-        Err("No items found".to_string())
-    }
+        Ok(items_json.to_string())
+        } else {
+            Err("No items found".to_string())
+        }
     }
     
     pub fn json_extract(array_json: &str) -> Vec<String> {
@@ -99,8 +65,47 @@ impl JsonHandler {
         items
     }
 
-    pub fn parse_owners_object(json_string: &str) -> Result<Vec<Owner>, String> {
-        let objects = Self::json_extract(json_string);
+    pub fn parse_repos_object(items_json: &str) -> Result<Vec<Repo>, String> {
+        let objects = Self::json_extract(items_json);
+        let mut repos: Vec<Repo> = Vec::new();
+        
+        for repo_json in objects {
+            let name = Self::parse_data(&repo_json, "name").unwrap_or_default();
+            let owner_login = Self::parse_data(&repo_json, "login").unwrap_or_default(); // owner is at root level for forks
+            let html_url = Self::parse_data(&repo_json, "html_url").unwrap_or_default();
+            let forks_count = Self::parse_data(&repo_json, "forks_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            let language = Self::parse_data(&repo_json, "language").unwrap_or_default();
+            let open_issues_count = Self::parse_data(&repo_json, "open_issues_count")
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            let forks_url = Self::parse_data(&repo_json, "forks_url").unwrap_or_default();
+            let commits_url = Self::parse_data(&repo_json, "commits_url").unwrap_or_default();
+            let issues_url = Self::parse_data(&repo_json, "issues_url").unwrap_or_default();
+        
+            let repo = Repo::new(
+                name, 
+                owner_login, 
+                html_url,
+                forks_count, 
+                language, 
+                open_issues_count, 
+                forks_url,
+                commits_url,
+                issues_url
+                );
+            
+            repos.push(repo);
+        }
+        
+        Ok(repos)
+    }
+
+    pub fn parse_owners_object(items_json: &str) -> Result<Vec<Owner>, String> {
+        let objects = Self::json_extract(items_json);
         let mut owners = Vec::new();
 
         for owner_json in objects {
@@ -116,8 +121,8 @@ impl JsonHandler {
         Ok(owners)
     }
 
-    pub fn parse_issues_object(json_string: &str) -> Result<Vec<Issue>, String> {
-        let objects = Self::json_extract(json_string);
+    pub fn parse_issues_object(items_json: &str) -> Result<Vec<Issue>, String> {
+        let objects = Self::json_extract(items_json);
         let mut issues = Vec::new();
 
         for issue_json in objects {
@@ -156,44 +161,8 @@ impl JsonHandler {
     
     }
 
-    pub fn parse_forks_result(json_string: &str) -> Result<Vec<Repo>, String> {
-        let objects = Self::json_extract(json_string);
-        let mut repos = Vec::new();
-        
-        for repo_json in objects {
-            let name = Self::parse_data(&repo_json, "name").unwrap_or_default();
-            let owner_login = Self::parse_data(&repo_json, "login").unwrap_or_default(); // owner is at root level for forks
-            let html_url = Self::parse_data(&repo_json, "html_url").unwrap_or_default();
-            let forks_count = Self::parse_data(&repo_json, "forks_count")
-                .unwrap_or_default()
-                .parse::<u64>()
-                .unwrap_or(0);
-            let language = Self::parse_data(&repo_json, "language").unwrap_or_default();
-            let open_issues_count = Self::parse_data(&repo_json, "open_issues_count")
-                .unwrap_or_default()
-                .parse::<u64>()
-                .unwrap_or(0);
-            
-            let repo = Repo::new(
-                name,
-                owner_login,
-                html_url,
-                forks_count,
-                language,
-                open_issues_count,
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                0
-            );
-            repos.push(repo);
-        }
-        
-        Ok(repos)
-    }
-
-    pub fn parse_commits_result(json_string: &str) -> Result<Vec<Commit>, String> {
-        let objects = Self::json_extract(json_string);
+    pub fn parse_commits_result(items_json: &str) -> Result<Vec<Commit>, String> {
+        let objects = Self::json_extract(items_json);
         let mut commits = Vec::new();
 
         for commit_json in objects {

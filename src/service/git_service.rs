@@ -40,13 +40,16 @@ impl GitService {
             .bearer_auth(&self.token) 
             .send()
             .await
-            .unwrap(); 
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
 
         // No error handling (implement later), so assume it was successful 
-        let response_text = response.text().await.unwrap();
+        let items_json = JsonHandler::extract_items_array(&response).unwrap();
         
         // Call the JsonHandler for parsing
-        JsonHandler::parse_search_result(&response_text).unwrap()
+        JsonHandler::parse_repos_object(&items_json).unwrap()
     }
 
     pub async fn fetch_forks(&self, owner: &str, repo: &str) -> Vec<Repo> {
@@ -65,7 +68,7 @@ impl GitService {
         
         let response_text = response.text().await.unwrap();
 
-        JsonHandler::parse_forks_result(&response_text).unwrap()
+        JsonHandler::parse_repos_object(&response_text).unwrap()
     }
 
     pub async fn fetch_commits(&self, owner: &str, repo: &str) -> Vec<Commit> {
@@ -103,6 +106,6 @@ impl GitService {
         
         let response_text = response.text().await.unwrap();
 
-        JsonHandler::parse_issues_result(&response_text).unwrap()
+        JsonHandler::parse_issues_object(&response_text).unwrap()
     }
 }
