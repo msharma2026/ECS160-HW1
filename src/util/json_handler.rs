@@ -110,9 +110,9 @@ impl JsonHandler {
 
         for owner_json in objects {
             let login = Self::parse_data(&owner_json, "login").unwrap_or_default();
-            let id = Self::parse_data(&owner_json, "id").unwrap_or_default();
+            let id = Self::parse_data(&owner_json, "id").unwrap_or_default().parse::<u64>().unwrap_or(0);
             let htmlUrl = Self::parse_data(&owner_json, "htmlUrl").unwrap_or_default();
-            let site_admin = Self::parse_data(&owner_json, "site_admin").unwrap_or_default();
+            let site_admin = Self::parse_data(&owner_json, "site_admin").map(|s| s == "true").unwrap_or(false);
 
             let owner = Owner::new(login, id, htmlUrl, site_admin);
 
