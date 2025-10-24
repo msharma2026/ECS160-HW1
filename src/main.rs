@@ -4,7 +4,6 @@ mod util;
 #[cfg(test)]
 mod tests;
 
-// Import both services from the service module
 use service::{git_service::GitService, redis_service::RedisService};
 use util::valid_repo_checker::ValidRepoChecker;
 use std::process::Command;
