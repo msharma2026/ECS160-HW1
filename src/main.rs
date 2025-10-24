@@ -2,7 +2,8 @@ mod model;
 mod service;
 mod util;
 
-use service::git_service::GitService;
+// Import both services from the service module
+use service::{git_service::GitService, redis_service::RedisService};
 use util::valid_repo_checker::ValidRepoChecker;
 use std::process::Command;
 use std::collections::HashMap;
@@ -11,7 +12,11 @@ use crate::util::json_handler::JsonHandler;
 #[tokio::main]
 async fn main() {
     let service = GitService::new().await;
+    
+    // Create the RedisService
+    let mut redis_service = RedisService::new().await;
     println!("GitService created.");
+    println!("RedisService connected.");
 
     let target_language = ["Rust", "Java", "C", "C++"];
     for language in target_language {
@@ -75,11 +80,13 @@ async fn main() {
         println!("Open issues in top-10 repos: {}", issues);
         println!("Total stars: {}", stars);
 
-        //Part C code 
         println!("\n Finding Repo for {} ", language);
         for repo in &repos {
             if ValidRepoChecker::valid_repo(repo, language) {
                 println!("Found repo: {}/{}", repo.ownerLogin, repo.name);
+
+                redis_service.save_repo(repo).await;
+                
                 let clone_url = format!("https://github.com/{}/{}.git", repo.ownerLogin, repo.name);
                 let clone_dir = format!("cloned_repos/{}", language);
 
@@ -112,5 +119,4 @@ async fn main() {
             }
         }
     }
-
 }
