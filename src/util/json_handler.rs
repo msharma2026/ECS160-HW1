@@ -1,7 +1,5 @@
 use crate::model::repo::Repo;
 use crate::model::commit::Commit;
-use crate::model::issue::Issue;
-use crate::model::owner::Owner;
 
 pub struct JsonHandler;
 
@@ -107,54 +105,6 @@ impl JsonHandler {
         Ok(repos)
     }
 
-    pub async fn parse_owners_object(items_json: &str) -> Result<Vec<Owner>, String> {
-        let objects = Self::json_extract(items_json).await;
-        let mut owners = Vec::new();
-
-        for owner_json in objects {
-            let login = Self::parse_data(&owner_json, "login").await
-                .unwrap_or_default();
-            let id = Self::parse_data(&owner_json, "id").await
-                .unwrap_or_default()
-                .parse::<u64>()
-                .unwrap_or(0);
-            let htmlUrl = Self::parse_data(&owner_json, "htmlUrl").await
-                .unwrap_or_default();
-            let site_admin = Self::parse_data(&owner_json, "site_admin").await
-                .map(|s| s == "true")
-                .unwrap_or(false);
-
-            let owner = Owner::new(login, id, htmlUrl, site_admin);
-
-            owners.push(owner)
-        }
-        Ok(owners)
-    }
-
-    pub async fn parse_issues_object(items_json: &str) -> Result<Vec<Issue>, String> {
-        let objects = Self::json_extract(items_json).await;
-        let mut issues = Vec::new();
-
-        for issue_json in objects {
-            let title = Self::parse_data(&issue_json, "title").await
-                .unwrap_or_default();
-            let body = Self::parse_data(&issue_json, "body").await
-                .unwrap_or_default();
-            let state = Self::parse_data(&issue_json, "state").await
-                .unwrap_or_default();
-            let created_at = Self::parse_data(&issue_json, "created_at").await
-                .unwrap_or_default();
-            let updated_at = Self::parse_data(&issue_json, "updated_at").await
-                .unwrap_or_default();
-
-            let issue = Issue::new(title, body, state, created_at, updated_at);
-
-            issues.push(issue);
-        }
-
-        Ok(issues)
-    }
-
     pub async fn parse_data(json: &str, key: &str) -> Option<String> {
         // Formats key to search for data field in the JSON
         let pattern = format!("\"{}\":", key);
@@ -185,10 +135,8 @@ impl JsonHandler {
         for commit_json in objects {
             let sha = Self::parse_data(&commit_json, "sha").await
                 .unwrap_or_default();
-            let message = Self::parse_data(&commit_json, "message").await
-                .unwrap_or_default();
             
-            let commit = Commit::new(sha, message);
+            let commit = Commit::new(sha);
             commits.push(commit);
         }
 

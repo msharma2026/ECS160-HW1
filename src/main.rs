@@ -1,6 +1,8 @@
 mod model;
 mod service;
 mod util;
+#[cfg(test)]
+mod tests;
 
 // Import both services from the service module
 use service::{git_service::GitService, redis_service::RedisService};
@@ -80,6 +82,7 @@ async fn main() {
         println!("Open issues in top-10 repos: {}", issues);
         println!("Total stars: {}", stars);
 
+        //Part C code 
         println!("\n Finding Repo for {} ", language);
         for repo in &repos {
             if ValidRepoChecker::valid_repo(repo, language) {
