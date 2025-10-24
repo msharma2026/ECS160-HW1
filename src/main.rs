@@ -11,6 +11,8 @@ use std::process::Command;
 use std::collections::HashMap;
 use crate::util::json_handler::JsonHandler;
 
+const TARGET_LANGUAGES: [&str; 4] = ["Rust", "Java", "C", "C++"];
+
 #[tokio::main]
 async fn main() {
     let service = GitService::new().await;
@@ -20,8 +22,7 @@ async fn main() {
     println!("GitService created.");
     println!("RedisService connected.");
 
-    let target_language = ["Rust", "Java", "C", "C++"];
-    for language in target_language {
+    for language in TARGET_LANGUAGES {
         let repos = service.fetch_top_repos(language).await;
         println!("Language: {}, Got {} repos.", language, repos.len());
 
@@ -87,8 +88,6 @@ async fn main() {
         for repo in &repos {
             if ValidRepoChecker::valid_repo(repo, language) {
                 println!("Found repo: {}/{}", repo.ownerLogin, repo.name);
-
-                redis_service.save_repo(repo).await;
                 
                 let clone_url = format!("https://github.com/{}/{}.git", repo.ownerLogin, repo.name);
                 let clone_dir = format!("cloned_repos/{}", language);
@@ -111,6 +110,7 @@ async fn main() {
                 
                 println!("Repo cloned, checking for build and source files");
                 if ValidRepoChecker::both_build_and_source(&clone_dir, language) {
+                    redis_service.save_repo(repo).await;
                     println!("Valid repo found");
                     break;
                 } else {
