@@ -63,6 +63,8 @@ async fn main() {
             for i in sorted_files.len()..3 {
                 println!(" File name{}: [N/A]", i + 1);
             }
+            // Stores issues in the issues list
+            let issues_list = service.fetch_issues(&repo.ownerLogin, &repo.name).await;
 
             let forks = service.fetch_forks(&repo.ownerLogin, &repo.name).await;
             for fork in forks.iter() {

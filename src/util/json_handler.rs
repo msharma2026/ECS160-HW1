@@ -1,5 +1,6 @@
 use crate::model::repo::Repo;
 use crate::model::commit::Commit;
+use crate::model::issue::Issue;
 
 pub struct JsonHandler;
 
@@ -103,6 +104,35 @@ impl JsonHandler {
         }
         
         Ok(repos)
+    }
+
+    pub async fn parse_issues_result(items_json: &str) -> Result<Vec<Issue>, String> {
+        let objects = Self::json_extract(items_json).await;
+        let mut issues: Vec<Issue> = Vec::new();
+        
+        for issue_json in objects {
+            let title = Self::parse_data(&items_json, "title").await
+                .unwrap_or_default();
+            let body = Self::parse_data(&items_json, "body").await; // optional
+            let state = Self::parse_data(&items_json, "state").await
+                .unwrap_or_default();
+            let created_at = Self::parse_data(&items_json, "created_at").await
+                .unwrap_or_default();
+            let updated_at = Self::parse_data(&items_json, "updated_at").await
+                .unwrap_or_default();
+        
+            let issue = Issue::new(
+                title, 
+                body, 
+                state,
+                created_at, 
+                updated_at
+                );
+            
+            issues.push(issue);
+        }
+        
+        Ok(issues)
     }
 
     pub async fn parse_data(json: &str, key: &str) -> Option<String> {
