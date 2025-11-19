@@ -27,6 +27,7 @@ impl RedisService {
         let stars_count_str = repo.starsCount.to_string();
 
         let issue_ids = repo.issues.iter()
+            .filter(|i| i.id != 0)
             .map(|i| format!("iss-{}", i.id))
             .collect::<Vec<String>>()
             .join(",");
