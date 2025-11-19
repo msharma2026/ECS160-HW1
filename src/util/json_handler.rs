@@ -89,7 +89,7 @@ impl JsonHandler {
                 .unwrap_or_default()
                 .parse::<u64>()
                 .unwrap_or(0);
-        
+            let issues: Vec<Issue> = Vec::new();
             let repo = Repo::new(
                 name, 
                 owner_login, 
@@ -97,7 +97,8 @@ impl JsonHandler {
                 forks_count, 
                 stars_count,
                 language, 
-                open_issues_count
+                open_issues_count,
+                issues
                 );
             
             repos.push(repo);
@@ -113,7 +114,7 @@ impl JsonHandler {
         for issue_json in objects {
             let title = Self::parse_data(&items_json, "title").await
                 .unwrap_or_default();
-            let body = Self::parse_data(&items_json, "body").await; // optional
+            let description = Self::parse_data(&items_json, "body").await; // optional
             let state = Self::parse_data(&items_json, "state").await
                 .unwrap_or_default();
             let created_at = Self::parse_data(&items_json, "created_at").await
@@ -123,7 +124,7 @@ impl JsonHandler {
         
             let issue = Issue::new(
                 title, 
-                body, 
+                description, 
                 state,
                 created_at, 
                 updated_at

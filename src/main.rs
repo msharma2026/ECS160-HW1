@@ -22,14 +22,14 @@ async fn main() {
     println!("RedisService connected.");
 
     for language in TARGET_LANGUAGES {
-        let repos = service.fetch_top_repos(language).await;
+        let mut repos = service.fetch_top_repos(language).await;
         println!("Language: {}, Got {} repos.", language, repos.len());
 
         let total_forks: u64 = repos.iter().map(|f| f.forksCount).sum();
 
         let mut new_commits: u64 = 0;
         
-        for repo in &repos {
+        for repo in &mut repos {
             println!("Repo name: {}", &repo.name);
 
             // Hashmap to store modified files and modified count
@@ -65,6 +65,7 @@ async fn main() {
             }
             // Stores issues in the issues list
             let issues_list = service.fetch_issues(&repo.ownerLogin, &repo.name).await;
+            repo.issues = issues_list;
 
             let forks = service.fetch_forks(&repo.ownerLogin, &repo.name).await;
             for fork in forks.iter() {
