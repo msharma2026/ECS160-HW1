@@ -112,6 +112,8 @@ impl JsonHandler {
         let mut issues: Vec<Issue> = Vec::new();
         
         for issue_json in objects {
+            let id = Self::parse_data(&items_json, "id").await
+                .unwrap_or_default();
             let title = Self::parse_data(&items_json, "title").await
                 .unwrap_or_default();
             let description = Self::parse_data(&items_json, "body").await; // optional
@@ -123,6 +125,7 @@ impl JsonHandler {
                 .unwrap_or_default();
         
             let issue = Issue::new(
+                id,
                 title, 
                 description, 
                 state,

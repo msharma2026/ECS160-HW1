@@ -1,5 +1,6 @@
 use redis::{AsyncCommands, Client, aio::MultiplexedConnection};
 use crate::model::repo::Repo;
+use crate::model::issue::Issue;
 
 pub struct RedisService {
     // Async connection
@@ -25,6 +26,11 @@ impl RedisService {
         let open_issues_str = repo.openIssuesCount.to_string();
         let stars_count_str = repo.starsCount.to_string();
 
+        let issue_ids = repo.issues.iter()
+            .map(|i| i.id.clone())
+            .collect::<Vec<String>>()
+            .join(",");
+
         let _: () = self.connection.hset_multiple(
             repo_key,
             &[
@@ -33,7 +39,27 @@ impl RedisService {
                 ("starsCount", &stars_count_str),
                 ("language", &repo.language),
                 ("openIssuesCount", &open_issues_str),
-                ("owner", &owner_key)
+                ("owner", &owner_key),
+                ("issues", &issue_ids)
+            ]
+        )
+        .await
+        .unwrap();
+
+        for issue in &repo.issues {
+            self.save_issue(issue).await;
+        }
+    }
+
+    pub async fn save_issue(&mut self, issue: &Issue) {
+        let issue_key = format!("issue:{}", issue.id);
+        let description = issue.description.clone().unwrap_or_default();
+
+        let _: () = self.connection.hset_multiple(
+            issue_key,
+            &[
+                ("createdAt", &issue.created_at),
+                ("description", &description)
             ]
         )
         .await
