@@ -53,7 +53,7 @@ impl RedisService {
     }
 
     pub async fn save_issue(&mut self, issue: &Issue) {
-        let issue_key = format!("issue:{}", issue.id);
+        let issue_key = format!("iss-{}", issue.id);
         let description = issue.description.clone().unwrap_or_default();
 
         let _: () = self.connection.hset_multiple(
