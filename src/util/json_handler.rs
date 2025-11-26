@@ -41,11 +41,21 @@ impl JsonHandler {
         let mut end = 0;
         let mut start = None;
         let mut in_string = false;
+        let bytes = array_json.as_bytes();
         
         while end < array_json.len() {
-            let byte = array_json.as_bytes()[end];
-            if byte == b'"' && (end == 0 || array_json.as_bytes()[end-1] != b'\\') {
-                in_string = !in_string;
+            let byte = bytes[end];
+            if byte == b'"' {
+                let mut backslash_count = 0;
+                let mut check_index = end;
+                while check_index > 0 && bytes[check_index - 1] == b'\\' {
+                    backslash_count += 1;
+                    check_index -= 1;
+                }
+
+                if backslash_count % 2 == 0 {
+                    in_string = !in_string;
+                }
             }
             
             if !in_string {
@@ -122,7 +132,11 @@ impl JsonHandler {
         let mut issues: Vec<Issue> = Vec::new();
         
         for issue_json in objects {
-            let id = Self::parse_data(&issue_json, "number").await
+            let id = Self::parse_data(&issue_json, "id").await
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or(0);
+            let number = Self::parse_data(&issue_json, "number").await
                 .unwrap_or_default()
                 .parse::<u64>()
                 .unwrap_or(0);
@@ -138,6 +152,7 @@ impl JsonHandler {
         
             let issue = Issue::new(
                 id,
+                number,
                 title, 
                 description, 
                 state,
