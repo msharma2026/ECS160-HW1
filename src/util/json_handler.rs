@@ -40,21 +40,31 @@ impl JsonHandler {
         let mut bracket_index = 0;
         let mut end = 0;
         let mut start = None;
+        let mut in_string = false;
         
         while end < array_json.len() {
             let byte = array_json.as_bytes()[end];
-            if byte == b'{' {
-                if bracket_index == 0 {
-                    start = Some(end);
-                }
-                bracket_index += 1;
-            } else if byte == b'}' {
-                bracket_index -= 1;
-                if bracket_index == 0 {
-                    if let Some(start_index) = start {
-                        let obj = &array_json[start_index..=end];
-                        items.push(obj.to_string());
-                        start = None;
+            if byte == b'"' && (end == 0 || array_json.as_bytes()[end-1] != b'\\') {
+                in_string = !in_string;
+            }
+            
+            if !in_string {
+                if byte == b'{' {
+                    if bracket_index == 0 {
+                        start = Some(end);
+                    }
+                    bracket_index += 1;
+                } else if byte == b'}' {
+                    if bracket_index > 0 {
+                        bracket_index -= 1;
+                    }
+
+                    if bracket_index == 0 {
+                        if let Some(start_index) = start {
+                            let obj = &array_json[start_index..=end];
+                            items.push(obj.to_string());
+                            start = None;
+                        }
                     }
                 }
             }

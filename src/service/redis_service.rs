@@ -35,13 +35,13 @@ impl RedisService {
         let _: () = self.connection.hset_multiple(
             repo_key,
             &[
-                ("htmlUrl", &repo.htmlUrl),
+                ("Url", &repo.htmlUrl),
                 ("forksCount", &forks_count_str),
                 ("starsCount", &stars_count_str),
                 ("language", &repo.language),
                 ("openIssuesCount", &open_issues_str),
                 ("owner", &owner_key),
-                ("issues", &issue_ids)
+                ("Issues", &issue_ids)
             ]
         )
         .await
@@ -60,7 +60,7 @@ impl RedisService {
             issue_key,
             &[
                 ("createdAt", &issue.created_at),
-                ("description", &description)
+                ("Description", &description)
             ]
         )
         .await
